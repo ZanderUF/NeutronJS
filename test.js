@@ -22,6 +22,7 @@ var maxParticles = 1,
 var widthRect = 500;
 var heightRect = 500;
 ctx.strokeStyle = "blue";
+ctx.linewidth ="5";
 
 //get pts to construct rectanlge @ center of page //
 midW = (midW/2)-(widthRect/2);
@@ -107,6 +108,22 @@ Particle.prototype.move = function () {
 	this.position.add(this.velocity);
 }
 
+Particle.prototype.bounce = function (xVel,yVel,angle) {
+
+    //var angle = xVel.getAngle();
+
+    this.velocity  = new Vector(-(xVel),-(yVel));
+
+    // document.write(this.velocity.getAngle());
+    
+    //add acc to current velocity
+    this.velocity.add(this.acceleration);
+
+    //add current velocity to position
+    this.position.add(this.velocity);
+
+}
+
 function addNewParticles() {
     // if we're at our max, stop emitting.
     if (particles.length > maxParticles) return;
@@ -121,6 +138,10 @@ function addNewParticles() {
     }
 }
 
+function roundToTwo(num) {    
+    return +(Math.round(num + "e+2")  + "e-2");
+}
+
 function plotParticles(boundsX, boundsY) {
     // a new array to hold particles within our bounds
     var currentParticles = [];
@@ -129,18 +150,24 @@ function plotParticles(boundsX, boundsY) {
         var particle = particles[i];
         var pos = particle.position;
 
-        // If we're out of bounds, drop this particle and move on to the next
-        if (pos.x < 0 || pos.x > boundsX || pos.y < 0 || pos.y > boundsY) {
+  
+        pos.x=roundToTwo((pos.x *100)/100);
+        pos.y=roundToTwo((pos.y *100)/100);
+        
+        //check if we are @ boundary, bounce off boundary 
+        if (pos.x <= midW || pos.x >= boundsX || pos.y < midH || pos.y >= boundsY) {
 
-        	
+            var currX = particle.velocity.x;
+            var currY = particle.velocity.y;
+            var currAngle = particle.velocity.getAngle();
+            particle.bounce(currX,currY,currAngle);
+            //document.write(boundsX);
         }
         else
         {
         	        particle.move();
         }
 
-
-        // Move our particles
 
         // Add this particle to the list of current particles
         currentParticles.push(particle);
