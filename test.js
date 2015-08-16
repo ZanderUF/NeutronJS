@@ -14,7 +14,7 @@ var emitterCounter = 0;
 
 //Particle definition//
 var maxParticles = 1,
-    particleSize = 5,
+    neutronSize = 5,
     emissionRate = 1,
     objectSize = 3; // drawSize of emitter/field
 
@@ -33,9 +33,9 @@ var maxW = midW + widthRect;
 var maxH = midH + heightRect;
 
 //define material properties//
-var atomWidth = 3;
-var atomHeight = 3;
-
+var materialWidth = 3;
+//var atomHeight = 3;
+var materialLocations = [];
 
 //vector object//
 function Vector(x,y) {
@@ -71,7 +71,6 @@ function Particle(point, velocity, acceleration) {
   this.acceleration = acceleration || new Vector(0, 0);
 }
 
-
 function Emitter(point, velocity, spread) {
     this.position = point; // Vector
     this.velocity = velocity; // Vector
@@ -98,31 +97,6 @@ Emitter.prototype.emitParticle = function () {
     return new Particle(position, velocity);
 };
 
-//How to move the particle //
-Particle.prototype.move = function () {
-
-	//add acc to current velocity
-	this.velocity.add(this.acceleration);
-
-	//add current velocity to position
-	this.position.add(this.velocity);
-}
-
-Particle.prototype.bounce = function (xVel,yVel,angle) {
-
-    //var angle = xVel.getAngle();
-
-    this.velocity  = new Vector(-(xVel),-(yVel));
-
-    // document.write(this.velocity.getAngle());
-    
-    //add acc to current velocity
-    this.velocity.add(this.acceleration);
-
-    //add current velocity to position
-    this.position.add(this.velocity);
-
-}
 
 function addNewParticles() {
     // if we're at our max, stop emitting.
@@ -150,7 +124,6 @@ function plotParticles(boundsX, boundsY) {
         var particle = particles[i];
         var pos = particle.position;
 
-  
         pos.x=roundToTwo((pos.x *100)/100);
         pos.y=roundToTwo((pos.y *100)/100);
         
@@ -161,13 +134,11 @@ function plotParticles(boundsX, boundsY) {
             var currY = particle.velocity.y;
             var currAngle = particle.velocity.getAngle();
             particle.bounce(currX,currY,currAngle);
-            //document.write(boundsX);
         }
         else
         {
-        	        particle.move();
+        	particle.move();
         }
-
 
         // Add this particle to the list of current particles
         currentParticles.push(particle);
@@ -181,11 +152,11 @@ function drawParticles() {
     ctx.fillStyle = 'rgb(0,0,255)';
     for (var i = 0; i < particles.length; i++) {
         var position = particles[i].position;
-        ctx.fillRect(position.x, position.y, particleSize, particleSize);
+        drawCircle(position.x,position.y,neutronSize);
     }
 }
 
-function drawCircle(object) {
+function emitterCircle(object) {
     ctx.fillStyle = object.drawColor;
     ctx.beginPath();
     ctx.arc(object.position.x, object.position.y, objectSize, 0, Math.PI * 2);
@@ -193,11 +164,16 @@ function drawCircle(object) {
     ctx.fill();
 }
 
+function drawCircle(x,y,atomWidth) {
+            ctx.beginPath();
+            ctx.arc(x, y, atomWidth, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.fill();
+}
+
 //fill rectangle with atoms//
-function drawMaterial(midW,midH,widthRect,heightRect,atomWidth,atomHeight) {
-	
-	var materialLocations = [];
-	
+function drawMaterial(midW,midH,widthRect,heightRect) {
+		
 	//create rectangle
 	ctx.strokeRect(midW,midH,widthRect,heightRect);
 
@@ -206,13 +182,63 @@ function drawMaterial(midW,midH,widthRect,heightRect,atomWidth,atomHeight) {
 	{
 		for(y=midH+10; y<maxH; y+=40)
 		{
-			ctx.fillRect(x,y,atomWidth,atomHeight);
-			
+            drawCircle(x,y,materialWidth);
 			//add coordinates//
 			materialLocations.push(new Vector(x,y));
 		}
 	}
 }
+//How to move the particle //
+Particle.prototype.move = function () {
+
+    //add acc to current velocity
+    this.velocity.add(this.acceleration);
+
+    //add current velocity to position
+    this.position.add(this.velocity);
+
+    //check for collisions//
+    for(i=0; i<materialLocations.length; i++){
+        var x1 = this.position.x;
+        var y1 = this.position.y;
+        var x2 = materialLocations[i].x;
+        var y2 = materialLocations[i].y;
+        collisionDetection(x1,y1,x2,y2);
+    }
+}
+
+Particle.prototype.bounce = function (xVel,yVel,angle) {
+
+    //var angle = xVel.getAngle();
+
+    this.velocity  = new Vector(-(xVel),-(yVel));
+    
+    //add acc to current velocity
+    this.velocity.add(this.acceleration);
+
+    //add current velocity to position
+    this.position.add(this.velocity);
+
+}
+function collisionDetection(x1,y1,x2,y2)
+{
+    var neutron = {radius: materialWidth , x: x1, y: y1};
+    var material = {radius: neutronSize, x: x2, y: y2};
+
+    var dx = neutron.x - material.x;
+    var dy = neutron.y - material.y;
+    var distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < neutron.radius + material.radius) {
+        // collision detected!
+            //document.write("chicken");
+            var currX = this.particle.velocity.x;
+            var currY = this.particle.velocity.y;
+            var currAngle = particle.velocity.getAngle();
+            bounce(currX,currY,currAngle);
+    } 
+}
+
 
 var particles = [];
 
@@ -251,8 +277,8 @@ function update() {
 
 function draw() {
     drawParticles();
-	drawMaterial(midW,midH,widthRect,heightRect,atomWidth,atomHeight)
-    emitters.forEach(drawCircle);   
+	drawMaterial(midW,midH,widthRect,heightRect)
+    emitters.forEach(emitterCircle);   
 }
 
 function queue() {
